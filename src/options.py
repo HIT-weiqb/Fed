@@ -12,6 +12,12 @@ def args_parser():
     parser.add_argument('--pretrained', type=int, default=0, help="whether pretrained or not")
     parser.add_argument('--hidden_channel', type=int, default=128,
                         help='hidden channel for DNN')
+    parser.add_argument('--pretrained_epochs', type=int, default=100,
+                        help="number of rounds of training")
+    parser.add_argument('--pretrained_lr', type=float, default=0.01,
+                        help='learning rate')
+    parser.add_argument('--pretrained_momentum', type=float, default=0.5,
+                        help='SGD momentum (default: 0.5)')
 
     # model arguments
     parser.add_argument('--model', type=str, default='AlexNet', help='model name')
