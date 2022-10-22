@@ -23,7 +23,7 @@ class DatasetSplit(Dataset):
         return torch.tensor(image), torch.tensor(label)
 
 
-class LocalUpdate(object):
+class PreTrained(object):
     def __init__(self, args, dataset, idxs):  # , logger
         self.args = args
         # self.logger = logger
@@ -44,47 +44,39 @@ class LocalUpdate(object):
         idxs_test = idxs[int(0.9*len(idxs)):]
 
         trainloader = DataLoader(DatasetSplit(dataset, idxs_train),
-                                 batch_size=self.args.local_bs, shuffle=True)
+                                 batch_size=self.args.pretrained_bs, shuffle=True)
         validloader = DataLoader(DatasetSplit(dataset, idxs_val),
                                  batch_size=int(len(idxs_val)/10), shuffle=False)
         testloader = DataLoader(DatasetSplit(dataset, idxs_test),
                                 batch_size=int(len(idxs_test)/10), shuffle=False)
         return trainloader, validloader, testloader
 
-    def update_weights(self, model, global_round):
+    def update_weights(self, model, optimizer, global_round, idx):
         # Set mode to train model
         model.train()
-        epoch_loss = []
+        epoch_loss = 0.
 
-        # Set optimizer for the local updates
-        if self.args.optimizer == 'sgd':
-            optimizer = torch.optim.SGD(model.parameters(), lr=self.args.lr,
-                                        momentum=0.5)
-        elif self.args.optimizer == 'adam':
-            optimizer = torch.optim.Adam(model.parameters(), lr=self.args.lr,
-                                         weight_decay=1e-4)
+    
+        batch_loss = []
+        for batch_idx, (images, labels) in enumerate(self.trainloader):
+            images, labels = images.to(self.device), labels.to(self.device)
 
-        for iter in range(self.args.local_ep):
-            batch_loss = []
-            for batch_idx, (images, labels) in enumerate(self.trainloader):
-                images, labels = images.to(self.device), labels.to(self.device)
+            model.zero_grad()
+            log_probs = model(images)
+            loss = self.criterion(log_probs, labels)
+            loss.backward()
+            optimizer.step()
 
-                model.zero_grad()
-                log_probs = model(images)
-                loss = self.criterion(log_probs, labels)
-                loss.backward()
-                optimizer.step()
+            if self.args.verbose and (batch_idx % 50 == 0):
+                print('| Client Idx : {} | Training Round : {} | [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                    idx, global_round, batch_idx * len(images), len(self.trainloader.dataset),
+                    100. * batch_idx / len(self.trainloader), loss.item()))
 
-                if self.args.verbose and (batch_idx % 10 == 0):
-                    print('| Global Round : {} | Local Epoch : {} | [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                        global_round, iter, batch_idx * len(images),
-                        len(self.trainloader.dataset),
-                        100. * batch_idx / len(self.trainloader), loss.item()))
-                # self.logger.add_scalar('loss', loss.item())
-                batch_loss.append(loss.item())
-            epoch_loss.append(sum(batch_loss)/len(batch_loss))
+            # self.logger.add_scalar('loss', loss.item())
+            batch_loss.append(loss.item())  # 记录每个batch的loss
+        epoch_loss = sum(batch_loss)/len(batch_loss)  # 求每个batch的平均
 
-        return model.state_dict(), sum(epoch_loss) / len(epoch_loss)
+        return model.state_dict(), epoch_loss
 
     def inference(self, model):
         """ Returns the inference accuracy and loss.

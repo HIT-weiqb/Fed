@@ -16,7 +16,7 @@ import torch
 from tensorboardX import SummaryWriter
 
 from options import args_parser
-from update import LocalUpdate, DataFreeDistillation, test_inference
+from update import PreTrained, DataFreeDistillation, test_inference
 from models import DNN, CNN1, CNN2, CNN3, LeNet, AlexNet, ResNet18, ResNet34, mobilenetv2, shufflenetv2
 from utils import get_dataset, average_weights, exp_details
 
@@ -82,7 +82,7 @@ if __name__ == '__main__':
         list_test_acc = checkpoint['test_accuracy'] 
         list_test_loss = checkpoint['test_loss']
         
-        print('Pre-trained done.\n')
+        print('Pre-trained Model Loaded.\n')
         for idx in range(args.num_users):
             Pretrained_Models[idx].load_state_dict(checkpoint[MODEL_NAMES[idx]])
             print('| Client Idx : {} | Model Architecture : {} | Test Acc : {}  Test loss : {}'.format(idx, MODEL_NAMES[idx], list_test_acc[idx], list_test_loss[idx])) 
@@ -90,50 +90,43 @@ if __name__ == '__main__':
         # Training
         train_loss, train_accuracy = [], []
 
-        for epoch in tqdm(range(args.epochs)):
-            local_losses =  []
-            print(f'\n | Training Round : {epoch+1} |\n')
 
-            m = max(int(args.frac * args.num_users), 1)
-            idxs_users = np.random.choice(range(args.num_users), m, replace=False)
+        for idx in range(args.num_users):
+        # 对每个局部模型做预训练
+            print('#################################################################################')
+            print('Training Clinet Idx: {} , Model Architecutre : {}'.format(idx, MODEL_NAMES[idx]))
 
-            for idx in idxs_users:
-                local_model = LocalUpdate(args=args, dataset=train_dataset,
+            pretrained = PreTrained(args=args, dataset=train_dataset,
                                             idxs=user_groups[idx])  # , logger=logger
-                print('| Client Idx: {}  | Model Architecture: {}|\n '.format(idx, MODEL_NAMES[idx]))
-                w, loss = local_model.update_weights(
-                    model=copy.deepcopy(Pretrained_Models[idx]), global_round=epoch)
-                local_losses.append(copy.deepcopy(loss))
-                Pretrained_Models[idx].load_state_dict(w)  # 将训练的模型参数保存下来
+            model = Pretrained_Models[idx]
 
+            # Set optimizer for the local updates
+            if args.pretrained_optimizer == 'sgd':
+                optimizer = torch.optim.SGD(model.parameters(), lr=args.pretrained_lr,
+                                            momentum=args.pretrained_momentum)
+            elif args.pretrained_optimizer == 'adam':
+                optimizer = torch.optim.Adam(model.parameters(), lr=args.pretrained_lr,
+                                            weight_decay=1e-4)
 
-            loss_avg = sum(local_losses) / len(local_losses)
-            train_loss.append(loss_avg)
+            for epoch in tqdm(range(args.pretrained_epochs)):
+                w, loss = pretrained.update_weights(model=model, optimizer=optimizer, global_round=epoch+1, idx=idx)
+                model.load_state_dict(w)  # 将训练的模型参数保存下来
 
-            # Calculate avg training accuracy over all users at every epoch
-            list_acc, list_loss = [], []
-            for idx in range(args.num_users):
-                Pretrained_Models[idx].eval()
-                local_model = LocalUpdate(args=args, dataset=train_dataset,
-                                            idxs=user_groups[idx]) #  , logger=logger
-                acc, loss = local_model.inference(model=Pretrained_Models[idx])
-                list_acc.append(acc)
-                list_loss.append(loss)
+            if (epoch+1) % 10 == 0:
+                # eval
+                list_acc, list_loss = [], []
+                acc, loss = pretrained.inference(model=model)            
+                print('##############################################################################################')
+                print(' Client Idx: {} | Model Architecture: {} | Training Round: {} | Eval Acc: {}   Eval Loss: {} |'.format(
+                    idx, MODEL_NAMES[idx], epoch+1, acc, loss))
+                print('##############################################################################################')
 
-            # print global training loss after every 'i' rounds
-            if (epoch+1) % print_every == 0:
-                print(f' \ Training Stats after {epoch+1} global rounds:')
-                print('Training Loss : ', list_loss)
-                print('Train Accuracy: ', list_acc)
-
-        # Test inference after completion of training
+        # Test inference after completion of pretraining
         list_test_acc, list_test_loss = [], []
         for idx in range(args.num_users):
             test_acc, test_loss = test_inference(args, Pretrained_Models[idx], test_dataset, user_groups_test[idx])
             list_test_acc.append(test_acc)
             list_test_loss.append(test_loss)
-
-
 
         print('Final Test Loss : ' ,list_test_loss)
         print('Final Test Accuracy: ' ,list_test_acc)
@@ -155,6 +148,7 @@ if __name__ == '__main__':
             checkpoint[MODEL_NAMES[idx]] = Pretrained_Models[idx].state_dict()
         model_path = os.path.join('{}/models'.format(path_project),'checkpoint_{}_iid[{}].pth.tar'.format(args.dataset, args.iid))
         torch.save(checkpoint, model_path)
+
 
 
     # federated learning & data free distillation
