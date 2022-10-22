@@ -86,10 +86,19 @@ def average_weights(w):
 
 def exp_details(args):
     print('\nExperimental details:')
+    # 预训练
+    print(f'    Pretrained Epochs : {args.pretrained_epochs}')
+    print(f'    Pretrained Batch Size : {args.pretrained_bs}')
+    print(f'    Pretrained Learning Rate : {args.pretrained_lr}')
+    print(f'    Pretrained Optimizer : {args.pretrained_optimizer}')
+
+
+    # 蒸馏
     print(f'    Model     : {args.model}')
-    print(f'    Optimizer : {args.optimizer}')
-    print(f'    Learning  : {args.lr}')
-    print(f'    Global Rounds   : {args.epochs}\n')
+    print('     Optimizer : SGD ')
+    print(f'    Local Model Learning Rate  : {args.lr_S}')
+    print(f'    Generator Learning Rate  : {args.lr_G}')
+    print(f'    Global Rounds   : {args.comm_rounds}\n')
 
     print('    Federated parameters:')
     if args.iid:
