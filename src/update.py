@@ -69,7 +69,7 @@ class PreTrained(object):
 
             if self.args.verbose and ((batch_idx+1) % 50 == 0):
                 print('| Client Idx : {} | Training Round : {} | [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                    idx, global_round, batch_idx * len(images), len(self.trainloader.dataset),
+                    idx, global_round, (batch_idx+1) * len(images), len(self.trainloader.dataset),
                     100. * batch_idx / len(self.trainloader), loss.item()))
 
             # self.logger.add_scalar('loss', loss.item())

@@ -112,14 +112,14 @@ if __name__ == '__main__':
                 w, loss = pretrained.update_weights(model=model, optimizer=optimizer, global_round=epoch+1, idx=idx)
                 model.load_state_dict(w)  # 将训练的模型参数保存下来
 
-            if (epoch+1) % 10 == 0:
-                # eval
-                list_acc, list_loss = [], []
-                acc, loss = pretrained.inference(model=model)            
-                print('##############################################################################################')
-                print(' Client Idx: {} | Model Architecture: {} | Training Round: {} | Eval Acc: {}   Eval Loss: {} |'.format(
-                    idx, MODEL_NAMES[idx], epoch+1, acc, loss))
-                print('##############################################################################################')
+                if (epoch+1) % 10 == 0:
+                    # eval
+                    list_acc, list_loss = [], []
+                    acc, loss = pretrained.inference(model=model)            
+                    print('##############################################################################################')
+                    print(' Client Idx: {} | Model Architecture: {} | Training Round: {} | Eval Acc: {}   Eval Loss: {} |'.format(
+                        idx, MODEL_NAMES[idx], epoch+1, acc, loss))
+                    print('##############################################################################################')
 
         # Test inference after completion of pretraining
         list_test_acc, list_test_loss = [], []
