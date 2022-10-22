@@ -67,7 +67,7 @@ class PreTrained(object):
             loss.backward()
             optimizer.step()
 
-            if self.args.verbose and (batch_idx % 50 == 0):
+            if self.args.verbose and ((batch_idx+1) % 50 == 0):
                 print('| Client Idx : {} | Training Round : {} | [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                     idx, global_round, batch_idx * len(images), len(self.trainloader.dataset),
                     100. * batch_idx / len(self.trainloader), loss.item()))

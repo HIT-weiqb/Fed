@@ -37,7 +37,7 @@ if __name__ == '__main__':
     start_time = time.time()
 
     # define paths
-    path_project = '/data_b/wqb/src/data'
+    path_project = '/home/aiia611/wqb/data'  # /data_b/wqb/src/data
     # logger = SummaryWriter('../logs')
 
     args = args_parser()
@@ -176,9 +176,9 @@ if __name__ == '__main__':
         for idx in range(args.num_users):  # 用deepcopy来实现，global model初始化local model
             generator.load_state_dict(local_gen_user[idx])  # 加载local generator
             local_model = DataFreeDistillation(args=args, dataset=test_dataset,
-                                      idxs=user_groups_test[idx],client=idx)  # , logger=logger
+                                      idxs=user_groups_test[idx])  # , logger=logger
             w, w_gen, loss = local_model.distillation(  # 在这里实现蒸馏
-                model=copy.deepcopy(global_model), generator=generator, teacher=Pretrained_Models[idx], global_round=epoch)
+                model=copy.deepcopy(global_model), generator=generator, teacher=Pretrained_Models[idx], global_round=epoch, client=idx)
         
             # record local generator
             local_gen_user[idx] = w_gen
@@ -199,11 +199,8 @@ if __name__ == '__main__':
         train_loss.append(loss_avg)
 
         if epoch % 10 == 0:  # 测试global model在整个dataset上的性能
-
-
-
+            t=1
     # 还差最后总的，对global model的测试
-
     print('\n Total Run Time: {0:0.4f}'.format(time.time()-start_time))
 
     # PLOTTING (optional)

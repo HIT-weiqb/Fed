@@ -9,14 +9,14 @@ from sampling import mnist_iid, mnist_noniid, mnist_noniid_unequal
 from sampling import cifar_iid, cifar_noniid
 
 
-def get_dataset(args):
+def get_dataset(args, path_project):
     """ Returns train and test datasets and a user group which is a dict where
     the keys are the user index and the values are the corresponding data for
     each of those users.
     """
     user_groups_test = None
     if args.dataset == 'cifar':
-        data_dir = '{}/cifar/'.format(path_project)  #  ../data/cifar/'
+        data_dir = '{}/cifar10/'.format(path_project)  #  ../data/cifar/'
         apply_transform = transforms.Compose(
             [transforms.ToTensor(),
              transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
