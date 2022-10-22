@@ -113,7 +113,7 @@ class DataFreeDistillation(object):
         self.criterion = nn.NLLLoss().to(self.device)
 
 
-    def distillation(self, student, generator, teacher, global_round):
+    def distillation(self, student, generator, teacher, global_round, client):
         # transmit model to device
         student = student.to(self.device)
         teacher = teacher.to(self.device)
@@ -165,37 +165,13 @@ class DataFreeDistillation(object):
                 loss_G.backward()
                 optimizer_G.step()
             
-            print('| Global Round : {} | Local Epoch : {}/{} ({:.0f}%)]\t| S_Loss: {:.6f}   G_LOSS:{:.6f}'.format(
-                        global_round, iter, self.args.local_ep,
-                        100. * iter / self.args.local_ep, G_loss, sum(batch_loss)/len(batch_loss)))
+            print('| Global Round : {} | Client Idx : {} | Local Epoch : {}/{} ({:.0f}%)]\t| S_Loss: {:.6f}   G_LOSS:{:.6f}'.format(
+                        global_round, client, iter, self.args.local_ep,
+                        100. * iter / self.args.local_ep, sum(batch_loss)/len(batch_loss), G_loss))
 
         return student.state_dict(), generator.state_dict(), sum(epoch_loss) / len(epoch_loss)
 
         
-
-
-
-
-
-        # for iter in range(self.args.local_ep):
-        #     batch_loss = []
-        #     for batch_idx, (images, labels) in enumerate(self.trainloader):
-        #         images, labels = images.to(self.device), labels.to(self.device)
-
-        #         model.zero_grad()
-        #         log_probs = model(images)
-        #         loss = self.criterion(log_probs, labels)
-        #         loss.backward()
-        #         optimizer.step()
-
-        #         if self.args.verbose and (batch_idx % 10 == 0):
-        #             print('| Global Round : {} | Local Epoch : {} | [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-        #                 global_round, iter, batch_idx * len(images),
-        #                 len(self.trainloader.dataset),
-        #                 100. * batch_idx / len(self.trainloader), loss.item()))
-        #         # self.logger.add_scalar('loss', loss.item())
-        #         batch_loss.append(loss.item())
-        #     epoch_loss.append(sum(batch_loss)/len(batch_loss))
 
 
 

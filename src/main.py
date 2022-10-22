@@ -166,42 +166,40 @@ if __name__ == '__main__':
     # Training
     train_loss, train_accuracy = [], []
     val_acc_list, net_list = [], []
-    cv_loss, cv_acc = [], []
-    print_every = 1
-    val_loss_pre, counter = 0, 0
 
     for epoch in tqdm(range(args.comm_rounds)):  # 通讯轮数
         local_weights, local_losses = [], []
         print(f'\n | Global Training Round : {epoch+1} |\n')
 
         global_model.train()
-        # m = max(int(args.frac * args.num_users), 1)
-        # idxs_users = np.random.choice(range(args.num_users), m, replace=False)
 
         for idx in range(args.num_users):  # 用deepcopy来实现，global model初始化local model
             generator.load_state_dict(local_gen_user[idx])  # 加载local generator
             local_model = DataFreeDistillation(args=args, dataset=test_dataset,
-                                      idxs=user_groups_test[idx])  # , logger=logger
+                                      idxs=user_groups_test[idx],client=idx)  # , logger=logger
             w, w_gen, loss = local_model.distillation(  # 在这里实现蒸馏
                 model=copy.deepcopy(global_model), generator=generator, teacher=Pretrained_Models[idx], global_round=epoch)
-
-            # 测试在local dataset上的准确率和loss
-
+        
             # record local generator
             local_gen_user[idx] = w_gen
             local_weights.append(copy.deepcopy(w))  # 统计各client的local model参数
             local_losses.append(copy.deepcopy(loss))
 
+            # 测试在local dataset上的准确率和loss
+            if epoch % 5 == 0:
+                tmp_weights = global_model.state_dict()  # 暂存global model的权重
+                global_model.load_state_dict(w)  # 加载local model
+
         # update global weights
         global_weights = average_weights(local_weights)
-
-        # update global weights
         global_model.load_state_dict(global_weights)
 
-        
-        
+
         loss_avg = sum(local_losses) / len(local_losses)  # 这一通讯轮次的平均loss
         train_loss.append(loss_avg)
+
+        if epoch % 10 == 0:  # 测试global model在整个dataset上的性能
+
 
 
     # 还差最后总的，对global model的测试
