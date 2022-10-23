@@ -74,7 +74,7 @@ if __name__ == '__main__':
     # print(global_model)
 
     if args.pretrained == 1:  # 预训练好了，加载数据集的划分、准确率、模型参数
-        model_path = os.path.join('{}/models'.format(path_project), 'checkpoint_{}_{}_iid[{}].pth.tar'.format(args.dataset, args.pretrained_epochs, args.iid))
+        model_path = os.path.join('{}/pretraineds'.format(path_project), 'checkpoint_{}_{}_iid[{}].pth.tar'.format(args.dataset, args.pretrained_epochs, args.iid))
         assert os.path.isfile(model_path)
         checkpoint = torch.load(model_path)
         user_groups = checkpoint['user_groups']
@@ -146,7 +146,7 @@ if __name__ == '__main__':
         checkpoint['user_groups_test'] = user_groups_test
         for idx in range(args.num_users):
             checkpoint[MODEL_NAMES[idx]] = Pretrained_Models[idx].state_dict()
-        model_path = os.path.join('{}/models'.format(path_project),'checkpoint_{}_{}_iid[{}].pth.tar'.format(args.dataset, args.pretrained_epochs, args.iid))
+        model_path = os.path.join('{}/pretraineds'.format(path_project),'checkpoint_{}_{}_iid[{}].pth.tar'.format(args.dataset, args.pretrained_epochs, args.iid))
         torch.save(checkpoint, model_path)
 
 
@@ -165,11 +165,11 @@ if __name__ == '__main__':
 
     # Training
     train_loss, train_accuracy = [], []
-    val_acc_list, net_list = [], []
-
+    local_val_acc, local_val_loss = [0. for i in range(args.num_users)], [] # 测试的local model在本地数据集上的acc,loss
+    max_acc_global = 0.
     for epoch in tqdm(range(args.comm_rounds)):  # 通讯轮数
         local_weights, local_losses = [], []
-        print(f'\n | Global Training Round : {epoch+1} |\n')
+        print(f'\n | Global Communication Round : {epoch+1} |\n')
 
         global_model.train()
 
@@ -185,22 +185,42 @@ if __name__ == '__main__':
             local_weights.append(copy.deepcopy(w))  # 统计各client的local model参数
             local_losses.append(copy.deepcopy(loss))
 
-            # 测试在local dataset上的准确率和loss
-            if epoch % 5 == 0:
+            # 测试local model在local dataset上的准确率和loss
+            if (epoch+1) % 5 == 0:
                 tmp_weights = global_model.state_dict()  # 暂存global model的权重
                 global_model.load_state_dict(w)  # 加载local model
-
+                test_acc, test_loss = local_model.inference(global_model)   
+                local_val_acc[idx] = test_acc
+                local_val_loss[idx] = test_loss
+                global_model.load_state_dict(tmp_weights)
+                print('##############################################################################################')
+                print('| Communication Round : {} | Client Idx : {} | Distillation Test Acc : {}   Test Loss : {}'.format(
+                    epoch+1, idx, test_acc, test_loss))
+                print('##############################################################################################')
+                
         # update global weights
-        global_weights = average_weights(local_weights)
+        global_weights = average_weights(local_weights)  # 模型聚合
         global_model.load_state_dict(global_weights)
 
 
         loss_avg = sum(local_losses) / len(local_losses)  # 这一通讯轮次的平均loss
         train_loss.append(loss_avg)
 
-        if epoch % 10 == 0:  # 测试global model在整个dataset上的性能
-            t=1
-    # 还差最后总的，对global model的测试
+        if epoch % 10 == 0:  # 每过10个epoch, 测试global model在整个dataset上的性能
+            acc_global, loss_global = test_inference(global_model, test_dataset, idxs=[i for i in range(len(test_dataset))])
+            if acc_global >= max_acc_global:
+                checkpoint = {
+                    'epoch': epoch+1,
+                    'best_global_acc': acc_global,
+                    'best_global_loss': loss_global,
+                    'local_val_acc': local_val_acc,  
+                    'local_val_loss':local_val_loss,
+                    'global_model': global_model.state_dict()
+                }
+
+                result_path = os.path.join('{}/results'.format(path_project),'checkpoint_{}_{}_iid[{}].pth.tar'.format(args.dataset, args.comm_rounds, args.iid))
+                torch.save(checkpoint, model_path)
+                
     print('\n Total Run Time: {0:0.4f}'.format(time.time()-start_time))
 
     # PLOTTING (optional)

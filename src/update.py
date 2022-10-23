@@ -109,8 +109,6 @@ class DataFreeDistillation(object):
                                 batch_size=int(len(idxs)/10), shuffle=False)
         self.device = 'cuda' if args.gpu else 'cpu'
 
-        # 这里得看一下蒸馏的setting
-        self.criterion = nn.NLLLoss().to(self.device)
 
 
     def distillation(self, student, generator, teacher, global_round, client):
@@ -171,6 +169,29 @@ class DataFreeDistillation(object):
 
         return student.state_dict(), generator.state_dict(), sum(epoch_loss) / len(epoch_loss)
 
+    def inference(self, model):
+        """ Returns the inference accuracy and loss.
+        """
+
+        model.eval()
+        loss, total, correct = 0.0, 0.0, 0.0
+
+        for batch_idx, (images, labels) in enumerate(self.testloader):
+            images, labels = images.to(self.device), labels.to(self.device)
+
+            # Inference
+            outputs = model(images)
+            batch_loss = self.criterion(outputs, labels)
+            loss += batch_loss.item()
+
+            # Prediction
+            _, pred_labels = torch.max(outputs, 1)
+            pred_labels = pred_labels.view(-1)
+            correct += torch.sum(torch.eq(pred_labels, labels)).item()
+            total += len(labels)
+
+        accuracy = format((correct/total) *100, '.2f')
+        return accuracy, loss
         
 
 

@@ -68,7 +68,7 @@ def args_parser():
     parser.add_argument('--nz', type=int, default=256)
     parser.add_argument('--iter_discrim', type=int, default=5, help='number of iteration for Imitation Stage')
     parser.add_argument('--iter_gen', type=int, default=1, help='number of iteration for Generation  Stage')
-    parser.add_argument('--comm_rounds', type=int, default=200,  # communication rounds  可以先试试100
+    parser.add_argument('--comm_rounds', type=int, default=100,  # communication rounds  可以先试试100
                         help="number of rounds of training")
     parser.add_argument('--local_ep', type=int, default=100,  
                         help="the number of local epochs: E")
