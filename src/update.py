@@ -5,7 +5,7 @@
 import torch
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
-
+import torch.nn.functional as F
 
 class DatasetSplit(Dataset):
     """An abstract Dataset class wrapped around Pytorch Dataset class.
@@ -30,8 +30,8 @@ class PreTrained(object):
         self.trainloader, self.validloader, self.testloader = self.train_val_test(
             dataset, list(idxs))
         self.device = 'cuda' if args.gpu else 'cpu'
-        # Default criterion set to NLL loss function
-        self.criterion = nn.NLLLoss().to(self.device)
+        # Default criterion set to CrossEntropy Loss Function
+        self.criterion = nn.CrossEntropyLoss().to(self.device) 
 
     def train_val_test(self, dataset, idxs):
         """
@@ -139,7 +139,7 @@ class DataFreeDistillation(object):
                 fake = generator(z).detach()
                 t_logit = teacher(fake)
                 s_logit = student(fake)
-                loss_S = torch.nn.functional.F.l1_loss(s_logit, t_logit.detach())
+                loss_S = F.l1_loss(s_logit, t_logit.detach())  #  MAE
             
                 loss_S.backward()
                 optimizer_S.step()
@@ -157,7 +157,7 @@ class DataFreeDistillation(object):
                 s_logit = student(fake)
 
                 #loss_G = - torch.log( F.l1_loss( s_logit, t_logit )+1) 
-                loss_G = - torch.nn.functional.F.l1_loss( s_logit, t_logit ) 
+                loss_G = - F.l1_loss( s_logit, t_logit ) 
                 G_loss = loss_G.item()
 
                 loss_G.backward()
@@ -206,7 +206,7 @@ def test_inference(args, model, test_dataset, idxs):  # 这个应该可以复用
     loss, total, correct = 0.0, 0.0, 0.0
 
     device = 'cuda' if args.gpu else 'cpu'
-    criterion = nn.NLLLoss().to(device)
+    criterion = nn.CrossEntropyLoss().to(device)
     testloader = DataLoader(DatasetSplit(test_dataset, idxs),
                                  batch_size=128, shuffle=False)
 

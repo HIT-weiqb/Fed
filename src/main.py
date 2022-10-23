@@ -35,9 +35,9 @@ CANDIDATE_MODELS = {"DNN": DNN,   ## 一共十个模型架构
 MODEL_NAMES = ["DNN", "CNN1", "CNN2", "CNN3", "LeNet", "AlexNet", "shufflenetv2", "mobilenetv2", "ResNet18", "ResNet34"]
 if __name__ == '__main__':
     start_time = time.time()
-
+    print(1)
     # define paths
-    path_project = '/home/aiia611/wqb/data'  # /data_b/wqb/src/data
+    path_project = '/data_b/wqb/src/data'  # /home/aiia611/wqb/data
     # logger = SummaryWriter('../logs')
 
     args = args_parser()
@@ -85,7 +85,7 @@ if __name__ == '__main__':
         print('Pre-trained Model Loaded.\n')
         for idx in range(args.num_users):
             Pretrained_Models[idx].load_state_dict(checkpoint[MODEL_NAMES[idx]])
-            print('| Client Idx : {} | Model Architecture : {} | Test Acc : {}  Test loss : {}'.format(idx, MODEL_NAMES[idx], list_test_acc[idx], list_test_loss[idx])) 
+            print('| Client Idx : {} | Model Architecture : {:.12s} | Test Acc : {}  Test loss : {}'.format(idx, MODEL_NAMES[idx], list_test_acc[idx], list_test_loss[idx])) 
     else:
         # Training
         train_loss, train_accuracy = [], []
@@ -94,7 +94,7 @@ if __name__ == '__main__':
         for idx in range(args.num_users):
         # 对每个局部模型做预训练
             print('#################################################################################')
-            print('Training Clinet Idx: {} , Model Architecutre : {}'.format(idx, MODEL_NAMES[idx]))
+            print('Training Clinet Idx: {} , Model Architecutre : {%12s}'.format(idx, MODEL_NAMES[idx]))
 
             pretrained = PreTrained(args=args, dataset=train_dataset,
                                             idxs=user_groups[idx])  # , logger=logger
@@ -117,7 +117,7 @@ if __name__ == '__main__':
                     list_acc, list_loss = [], []
                     acc, loss = pretrained.inference(model=model)            
                     print('##############################################################################################')
-                    print(' Client Idx: {} | Model Architecture: {} | Training Round: {} | Eval Acc: {}   Eval Loss: {} |'.format(
+                    print(' Client Idx: {} | Model Architecture: {:.12s} | Training Round: {} | Eval Acc: {}   Eval Loss: {} |'.format(
                         idx, MODEL_NAMES[idx], epoch+1, acc, loss))
                     print('##############################################################################################')
 
@@ -167,6 +167,8 @@ if __name__ == '__main__':
     train_loss, train_accuracy = [], []
     local_val_acc, local_val_loss = [0. for i in range(args.num_users)], [] # 测试的local model在本地数据集上的acc,loss
     max_acc_global = 0.
+    print('#########################################################################################')
+    print('Start Data Free Distillation.')
     for epoch in tqdm(range(args.comm_rounds)):  # 通讯轮数
         local_weights, local_losses = [], []
         print(f'\n | Global Communication Round : {epoch+1} |\n')
@@ -209,6 +211,7 @@ if __name__ == '__main__':
         if epoch % 10 == 0:  # 每过10个epoch, 测试global model在整个dataset上的性能
             acc_global, loss_global = test_inference(global_model, test_dataset, idxs=[i for i in range(len(test_dataset))])
             if acc_global >= max_acc_global:
+                max_acc_global = copy.deepcopy(acc_global)
                 checkpoint = {
                     'epoch': epoch+1,
                     'best_global_acc': acc_global,

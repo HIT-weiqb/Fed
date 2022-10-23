@@ -95,7 +95,7 @@ def exp_details(args):
 
     # 蒸馏
     print(f'    Model     : {args.model}')
-    print('     Optimizer : SGD ')
+    print('    Optimizer : SGD ')
     print(f'    Local Model Learning Rate  : {args.lr_S}')
     print(f'    Generator Learning Rate  : {args.lr_G}')
     print(f'    Global Rounds   : {args.comm_rounds}\n')

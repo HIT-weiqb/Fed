@@ -19,7 +19,7 @@ class DNN(nn.Module):  # √
         x = torch.flatten(x, 1)
         x = F.relu(self.fc1(x))
         x = self.fc2(x)
-        return F.log_softmax(x, dim=1)
+        return x
 
 
 class CNN1(nn.Module):  # run √
@@ -38,7 +38,7 @@ class CNN1(nn.Module):  # run √
         x = F.relu(self.fc1(x))
         x = F.dropout(x, training=self.training)
         x = self.fc2(x)
-        return F.log_softmax(x, dim=1)
+        return x
 
 
 class CNN2(nn.Module):  # run √
@@ -61,7 +61,7 @@ class CNN2(nn.Module):  # run √
         x = self.layer2(x)
         x = x.view(x.size(0), -1)
         x = self.fc(x)
-        return F.log_softmax(x, dim=1)
+        return x
 
 
 class CNN3(nn.Module):  # √
@@ -81,7 +81,7 @@ class CNN3(nn.Module):  # √
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
-        return F.log_softmax(x, dim=1)
+        return x
 
 
 #########LeNeT##########
@@ -103,7 +103,7 @@ class LeNet(nn.Module):  # run √
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
-        return F.log_softmax(x, dim=1)
+        return x
 
 ########AlexNet#######  
 class AlexNet(nn.Module):  # run √
@@ -138,7 +138,7 @@ class AlexNet(nn.Module):  # run √
         x = self.features(x)
         x = x.view(x.size(0), -1)  ###本来是256 * 2 * 2，改为-1
         x = self.classifier(x)
-        return F.log_softmax(x, dim=1)
+        return x
 
 
 ############################ ResNet ############################
@@ -231,7 +231,7 @@ class ResNet(nn.Module):
         x = x.view(x.size(0), -1)
         x = self.fc(x)
 
-        return F.log_softmax(x, dim=1)
+        return x
 
 
 def ResNet18(args):  # run √
@@ -316,7 +316,7 @@ class MobileNetV2(nn.Module):
         x = x.view(x.size(0), -1)
         x = self.fc(x)
 
-        return F.log_softmax(x, dim=1)
+        return x
 
     def _make_stage(self, repeat, in_channels, out_channels, stride, t):
 
@@ -460,7 +460,7 @@ class ShuffleNetV2(nn.Module):
         x = x.view(x.size(0), -1)
         x = self.fc(x)
 
-        return F.log_softmax(x, dim=1)
+        return x
 
     def _make_stage(self, in_channels, out_channels, repeat):
         layers = []

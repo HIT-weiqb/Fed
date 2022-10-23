@@ -9,7 +9,7 @@ def args_parser():
     parser = argparse.ArgumentParser()
 
     # pretrained stage parameters
-    parser.add_argument('--pretrained', type=int, default=0, help="whether pretrained or not")
+    parser.add_argument('--pretrained', type=int, default=1, help="whether pretrained or not")
     parser.add_argument('--hidden_channel', type=int, default=128,
                         help='hidden channel for DNN')
     parser.add_argument('--pretrained_epochs', type=int, default=50,
@@ -42,7 +42,7 @@ def args_parser():
     
 
     # other arguments
-    parser.add_argument('--gpu_id', type=int, default=0, help="GPU id,-1 for CPU")
+    parser.add_argument('--gpu_id', type=int, default=7, help="GPU id,-1 for CPU")
     parser.add_argument('--dataset', type=str, default='cifar', help="name \
                         of dataset")
 
