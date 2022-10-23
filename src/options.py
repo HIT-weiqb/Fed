@@ -12,7 +12,7 @@ def args_parser():
     parser.add_argument('--pretrained', type=int, default=0, help="whether pretrained or not")
     parser.add_argument('--hidden_channel', type=int, default=128,
                         help='hidden channel for DNN')
-    parser.add_argument('--pretrained_epochs', type=int, default=100,
+    parser.add_argument('--pretrained_epochs', type=int, default=50,
                         help="number of rounds of training")
     parser.add_argument('--pretrained_lr', type=float, default=0.01,
                         help='learning rate')
@@ -81,8 +81,8 @@ def args_parser():
     parser.add_argument('--weight_decay', type=float, default=5e-4)
     parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
                         help='SGD momentum (default: 0.9)')
-    parser.add_argument('--seed', type=int, default=1, metavar='S',
-                        help='random seed (default: 1)')
+    parser.add_argument('--seed', type=int, default=33, metavar='S',
+                        help='random seed (default: 33)')
     parser.add_argument('--scheduler', action='store_true', default=False)
     args = parser.parse_args()
     return args

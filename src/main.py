@@ -74,7 +74,7 @@ if __name__ == '__main__':
     # print(global_model)
 
     if args.pretrained == 1:  # 预训练好了，加载数据集的划分、准确率、模型参数
-        model_path = os.path.join('{}/models'.format(path_project), 'checkpoint_{}_iid[{}].pth.tar'.format(args.dataset, args.iid))
+        model_path = os.path.join('{}/models'.format(path_project), 'checkpoint_{}_{}_iid[{}].pth.tar'.format(args.dataset, args.pretrained_epochs, args.iid))
         assert os.path.isfile(model_path)
         checkpoint = torch.load(model_path)
         user_groups = checkpoint['user_groups']
@@ -146,7 +146,7 @@ if __name__ == '__main__':
         checkpoint['user_groups_test'] = user_groups_test
         for idx in range(args.num_users):
             checkpoint[MODEL_NAMES[idx]] = Pretrained_Models[idx].state_dict()
-        model_path = os.path.join('{}/models'.format(path_project),'checkpoint_{}_iid[{}].pth.tar'.format(args.dataset, args.iid))
+        model_path = os.path.join('{}/models'.format(path_project),'checkpoint_{}_{}_iid[{}].pth.tar'.format(args.dataset, args.pretrained_epochs, args.iid))
         torch.save(checkpoint, model_path)
 
 
@@ -178,7 +178,7 @@ if __name__ == '__main__':
             local_model = DataFreeDistillation(args=args, dataset=test_dataset,
                                       idxs=user_groups_test[idx])  # , logger=logger
             w, w_gen, loss = local_model.distillation(  # 在这里实现蒸馏
-                model=copy.deepcopy(global_model), generator=generator, teacher=Pretrained_Models[idx], global_round=epoch, client=idx)
+                student=copy.deepcopy(global_model), generator=generator, teacher=Pretrained_Models[idx], global_round=epoch+1, client=idx)
         
             # record local generator
             local_gen_user[idx] = w_gen
