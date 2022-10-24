@@ -108,7 +108,7 @@ class DataFreeDistillation(object):
         self.testloader = DataLoader(DatasetSplit(dataset, idxs),
                                 batch_size=int(len(idxs)/10), shuffle=False)
         self.device = 'cuda' if args.gpu else 'cpu'
-
+        self.criterion = nn.CrossEntropyLoss().to(self.device)
 
 
     def distillation(self, student, generator, teacher, global_round, client):
@@ -156,15 +156,15 @@ class DataFreeDistillation(object):
                 t_logit = teacher(fake) 
                 s_logit = student(fake)
 
-                #loss_G = - torch.log( F.l1_loss( s_logit, t_logit )+1) 
-                loss_G = - F.l1_loss( s_logit, t_logit ) 
+                loss_G = - torch.log( F.l1_loss( s_logit, t_logit)+1) 
+                # loss_G = - F.l1_loss( s_logit, t_logit ) 
                 G_loss = loss_G.item()
 
                 loss_G.backward()
                 optimizer_G.step()
             
             print('| Global Round : {} | Client Idx : {} | Local Epoch : {}/{} ({:.0f}%)]\t| S_Loss: {:.6f}   G_LOSS:{:.6f}'.format(
-                        global_round, client, iter, self.args.local_ep,
+                        global_round, client, iter+1, self.args.local_ep,
                         100. * iter / self.args.local_ep, sum(batch_loss)/len(batch_loss), G_loss))
 
         return student.state_dict(), generator.state_dict(), sum(epoch_loss) / len(epoch_loss)
@@ -224,5 +224,5 @@ def test_inference(args, model, test_dataset, idxs):  # 这个应该可以复用
         correct += torch.sum(torch.eq(pred_labels, labels)).item()
         total += len(labels)
 
-    accuracy = format((correct/total) * 100, '.2f')
+    accuracy = (correct/total) * 100
     return accuracy, loss

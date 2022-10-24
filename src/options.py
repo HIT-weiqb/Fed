@@ -23,7 +23,7 @@ def args_parser():
                     of optimizer")
 
     # model arguments
-    parser.add_argument('--model', type=str, default='AlexNet', help='model name')
+    parser.add_argument('--model', type=str, default='CNN2', help='model name')
     parser.add_argument('--kernel_num', type=int, default=9,
                         help='number of each kind of kernel')
     parser.add_argument('--kernel_sizes', type=str, default='3,4,5',
@@ -42,7 +42,7 @@ def args_parser():
     
 
     # other arguments
-    parser.add_argument('--gpu_id', type=int, default=7, help="GPU id,-1 for CPU")
+    parser.add_argument('--gpu_id', type=int, default=0, help="GPU id,-1 for CPU")
     parser.add_argument('--dataset', type=str, default='cifar', help="name \
                         of dataset")
 
@@ -68,9 +68,9 @@ def args_parser():
     parser.add_argument('--nz', type=int, default=256)
     parser.add_argument('--iter_discrim', type=int, default=5, help='number of iteration for Imitation Stage')
     parser.add_argument('--iter_gen', type=int, default=1, help='number of iteration for Generation  Stage')
-    parser.add_argument('--comm_rounds', type=int, default=100,  # communication rounds  可以先试试100
+    parser.add_argument('--comm_rounds', type=int, default=10,  #   100
                         help="number of rounds of training")
-    parser.add_argument('--local_ep', type=int, default=100,  
+    parser.add_argument('--local_ep', type=int, default=1,    # 100
                         help="the number of local epochs: E")
     parser.add_argument('--local_bs', type=int, default=256,
                         help="local batch size: B")

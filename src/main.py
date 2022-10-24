@@ -37,7 +37,7 @@ if __name__ == '__main__':
     start_time = time.time()
     print(1)
     # define paths
-    path_project = '/data_b/wqb/src/data'  # /home/aiia611/wqb/data
+    path_project = '/home/aiia611/wqb/data'  #   /data_b/wqb/src/data
     # logger = SummaryWriter('../logs')
 
     args = args_parser()
@@ -48,8 +48,8 @@ if __name__ == '__main__':
     torch.cuda.manual_seed(args.seed)
     np.random.seed(args.seed)
     random.seed(args.seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
+    # torch.backends.cudnn.deterministic = True
+    # torch.backends.cudnn.benchmark = False
 
     if args.gpu_id>=0:
         torch.cuda.set_device(args.gpu_id)
@@ -77,6 +77,7 @@ if __name__ == '__main__':
         model_path = os.path.join('{}/pretraineds'.format(path_project), 'checkpoint_{}_{}_iid[{}].pth.tar'.format(args.dataset, args.pretrained_epochs, args.iid))
         assert os.path.isfile(model_path)
         checkpoint = torch.load(model_path)
+        print(checkpoint.keys())
         user_groups = checkpoint['user_groups']
         user_groups_test = checkpoint['user_groups_test']
         list_test_acc = checkpoint['test_accuracy'] 
@@ -165,7 +166,7 @@ if __name__ == '__main__':
 
     # Training
     train_loss, train_accuracy = [], []
-    local_val_acc, local_val_loss = [0. for i in range(args.num_users)], [] # 测试的local model在本地数据集上的acc,loss
+    local_val_acc, local_val_loss = [0. for i in range(args.num_users)], [0. for i in range(args.num_users)] # 测试的local model在本地数据集上的acc,loss
     max_acc_global = 0.
     print('#########################################################################################')
     print('Start Data Free Distillation.')
@@ -208,21 +209,27 @@ if __name__ == '__main__':
         loss_avg = sum(local_losses) / len(local_losses)  # 这一通讯轮次的平均loss
         train_loss.append(loss_avg)
 
-        if epoch % 10 == 0:  # 每过10个epoch, 测试global model在整个dataset上的性能
-            acc_global, loss_global = test_inference(global_model, test_dataset, idxs=[i for i in range(len(test_dataset))])
-            if acc_global >= max_acc_global:
-                max_acc_global = copy.deepcopy(acc_global)
-                checkpoint = {
+        if (epoch+1) % 10 == 0:  # 每过10个epoch, 测试global model在整个dataset上的性能
+            acc_global, loss_global = test_inference(args, global_model, test_dataset, idxs=[i for i in range(len(test_dataset))])
+            print('##############################################################################################')
+            print('| Testing Global Model Stage | Communication Round : {} | Client Idx : {} | Global Test Acc : {}   Test Loss : {}'.format(
+                    epoch+1, idx, acc_global, loss_global))
+            print('##############################################################################################')
+
+            checkpoint = {
                     'epoch': epoch+1,
-                    'best_global_acc': acc_global,
-                    'best_global_loss': loss_global,
+                    'global_acc': acc_global,
+                    'global_loss': loss_global,
                     'local_val_acc': local_val_acc,  
                     'local_val_loss':local_val_loss,
                     'global_model': global_model.state_dict()
                 }
-
-                result_path = os.path.join('{}/results'.format(path_project),'checkpoint_{}_{}_iid[{}].pth.tar'.format(args.dataset, args.comm_rounds, args.iid))
-                torch.save(checkpoint, model_path)
+            result_path2 = os.path.join('{}/distillation_checkpoints'.format(path_project),'training_checkpoint_{}_{}_iid[{}]_{}.pth.tar'.format(args.dataset, args.comm_rounds, args.iid, epoch+1))
+            torch.save(checkpoint, result_path2)
+            if acc_global >= max_acc_global:
+                max_acc_global = copy.deepcopy(acc_global)
+                result_path3 = os.path.join('{}/best_results'.format(path_project),'best_results_checkpoint_{}_{}_iid[{}]_{}.pth.tar'.format(args.dataset, args.comm_rounds, args.iid, epoch+1))
+                torch.save(checkpoint, result_path3)
                 
     print('\n Total Run Time: {0:0.4f}'.format(time.time()-start_time))
 
