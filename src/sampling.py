@@ -143,37 +143,44 @@ def mnist_noniid_unequal(dataset, num_users):
     return dict_users
 
 
-def cifar_iid(dataset, num_users):
+def cifar_iid(dataset, test_dataset, args):
     """
     Sample I.I.D. client data from CIFAR10 dataset
     :param dataset:
     :param num_users:
     :return: dict of image index
     """
-    num_items = int(len(dataset)/num_users)
+    num_items = int(len(dataset)/args.num_users)  # 5000
+    num_items_test = int(len(test_dataset) / args.num_users)  # 1000
     dict_users, all_idxs = {}, [i for i in range(len(dataset))]
-    for i in range(num_users):
+    dict_users_test, all_idxs_test = {}, [i for i in range(len(test_dataset))]
+    for i in range(args.num_users):
         dict_users[i] = set(np.random.choice(all_idxs, num_items,
                                              replace=False))
+        dict_users_test[i] = set(np.random.choice(all_idxs_test, num_items_test,
+                                             replace=False))
         all_idxs = list(set(all_idxs) - dict_users[i])
-    return dict_users
+        all_idxs_test = list(set(all_idxs_test) - dict_users_test[i])
+    return dict_users, dict_users_test
 
 
-def cifar_noniid(dataset, test_dataset,num_users):
+def cifar_noniid(dataset, test_dataset, args):
     """
     Sample non-I.I.D client data from CIFAR10 dataset
     :param dataset:
     :param num_users:
     :return:
     """
-    num_shards, num_imgs, num_imgs_test = 20, 2500, 500  # 一共10个client 每个client 分2个shard 
+    num_shards = args.num_shards * args.num_users
+    num_imgs = int(len(dataset) / num_shards)
+    num_imgs_test = int(len(test_dataset) / num_shards)  # 一共10个client 每个client 分2个shard 
     idx_shard = [i for i in range(num_shards)]
     # idx_shard_test = [i for i in range(num_shards)]
 
-    dict_users = {i: np.array([], dtype=int) for i in range(num_users)}
-    dict_users_test = {i: np.array([], dtype=int) for i in range(num_users)}
-    idxs = np.arange(num_shards*num_imgs)
-    idxs_test = np.arange(num_shards*num_imgs_test)
+    dict_users = {i: np.array([], dtype=int) for i in range(args.num_users)}
+    dict_users_test = {i: np.array([], dtype=int) for i in range(args.num_users)}
+    idxs = np.arange(len(dataset))
+    idxs_test = np.arange(len(test_dataset))
 
     # labels = dataset.train_labels.numpy()
     labels = np.array(dataset.targets)
@@ -189,8 +196,8 @@ def cifar_noniid(dataset, test_dataset,num_users):
     idxs_test = idxs_labels_test[0, :]
 
     # divide and assign
-    for i in range(num_users):
-        rand_set = set(np.random.choice(idx_shard, 2, replace=False))  # 从0,1,2.....19 shard的标号中随机抽取两个
+    for i in range(args.num_users):
+        rand_set = set(np.random.choice(idx_shard, args.num_shards, replace=False))  # 从0,1,2.....19 shard的标号中随机抽取两个
         idx_shard = list(set(idx_shard) - rand_set)
         for rand in rand_set:
             dict_users[i] = np.concatenate(

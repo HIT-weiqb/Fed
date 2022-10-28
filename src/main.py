@@ -18,6 +18,7 @@ from tensorboardX import SummaryWriter
 from options import args_parser
 from update import PreTrained, DataFreeDistillation, test_inference
 from models import DNN, CNN1, CNN2, CNN3, LeNet, AlexNet, ResNet18, ResNet34, mobilenetv2, shufflenetv2
+# from resnet_8x import ResNet34_8x
 from utils import get_dataset, average_weights, exp_details
 
 
@@ -95,7 +96,7 @@ if __name__ == '__main__':
         for idx in range(args.num_users):
         # 对每个局部模型做预训练
             print('#################################################################################')
-            print('Training Clinet Idx: {} , Model Architecutre : {%12s}'.format(idx, MODEL_NAMES[idx]))
+            print('Preraining Clinet Idx: {} , Model Architecutre : {:.12s}'.format(idx, MODEL_NAMES[idx]))
 
             pretrained = PreTrained(args=args, dataset=train_dataset,
                                             idxs=user_groups[idx])  # , logger=logger
@@ -118,7 +119,7 @@ if __name__ == '__main__':
                     list_acc, list_loss = [], []
                     acc, loss = pretrained.inference(model=model)            
                     print('##############################################################################################')
-                    print(' Client Idx: {} | Model Architecture: {:.12s} | Training Round: {} | Eval Acc: {}   Eval Loss: {} |'.format(
+                    print('| Client Idx: {} | Model Architecture: {:.12s} | Pretraining Round: {} | Eval Acc: {}   Eval Loss: {} |'.format(
                         idx, MODEL_NAMES[idx], epoch+1, acc, loss))
                     print('##############################################################################################')
 
@@ -189,17 +190,17 @@ if __name__ == '__main__':
             local_losses.append(copy.deepcopy(loss))
 
             # 测试local model在local dataset上的准确率和loss
-            if (epoch+1) % 5 == 0:
-                tmp_weights = global_model.state_dict()  # 暂存global model的权重
-                global_model.load_state_dict(w)  # 加载local model
-                test_acc, test_loss = local_model.inference(global_model)   
-                local_val_acc[idx] = test_acc
-                local_val_loss[idx] = test_loss
-                global_model.load_state_dict(tmp_weights)
-                print('##############################################################################################')
-                print('| Communication Round : {} | Client Idx : {} | Distillation Test Acc : {}   Test Loss : {}'.format(
-                    epoch+1, idx, test_acc, test_loss))
-                print('##############################################################################################')
+            # if (epoch+1) % 1 == 0:
+            #     tmp_weights = global_model.state_dict()  # 暂存global model的权重
+            #     global_model.load_state_dict(w)  # 加载local model
+            #     test_acc, test_loss = local_model.inference(global_model)   
+            #     local_val_acc[idx] = test_acc
+            #     local_val_loss[idx] = test_loss
+            #     global_model.load_state_dict(tmp_weights)
+            #     print('##############################################################################################')
+            #     print('| Communication Round : {} | Client Idx : {} | Distillation Test Acc : {}   Test Loss : {}'.format(
+            #         epoch+1, idx, test_acc, test_loss))
+            #     print('##############################################################################################')
                 
         # update global weights
         global_weights = average_weights(local_weights)  # 模型聚合
@@ -209,7 +210,7 @@ if __name__ == '__main__':
         loss_avg = sum(local_losses) / len(local_losses)  # 这一通讯轮次的平均loss
         train_loss.append(loss_avg)
 
-        if (epoch+1) % 10 == 0:  # 每过10个epoch, 测试global model在整个dataset上的性能
+        if (epoch+1) % 1 == 0:  # 每过1个epoch, 测试global model在整个dataset上的性能
             acc_global, loss_global = test_inference(args, global_model, test_dataset, idxs=[i for i in range(len(test_dataset))])
             print('##############################################################################################')
             print('| Testing Global Model Stage | Communication Round : {} | Client Idx : {} | Global Test Acc : {}   Test Loss : {}'.format(

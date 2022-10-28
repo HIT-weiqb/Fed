@@ -30,7 +30,7 @@ def get_dataset(args, path_project):
         # sample training data amongst users
         if args.iid:
             # Sample IID user data from Mnist
-            user_groups = cifar_iid(train_dataset, args.num_users)
+            user_groups, user_groups_test = cifar_iid(train_dataset, test_dataset, args)
         else:
             # Sample Non-IID user data from Mnist
             if args.unequal:
@@ -38,7 +38,7 @@ def get_dataset(args, path_project):
                 raise NotImplementedError()
             else:
                 # Chose euqal splits for every user
-                user_groups, user_groups_test = cifar_noniid(train_dataset, test_dataset, args.num_users)
+                user_groups, user_groups_test = cifar_noniid(train_dataset, test_dataset, args)
 
     elif args.dataset == 'mnist' or 'fmnist':
         if args.dataset == 'mnist':

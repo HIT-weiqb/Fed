@@ -6,6 +6,7 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
 import torch.nn.functional as F
+import os
 
 class DatasetSplit(Dataset):
     """An abstract Dataset class wrapped around Pytorch Dataset class.
@@ -68,7 +69,7 @@ class PreTrained(object):
             optimizer.step()
 
             if self.args.verbose and ((batch_idx+1) % 50 == 0):
-                print('| Client Idx : {} | Training Round : {} | [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                print('| Client Idx : {} | Pretraining Round : {} | [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                     idx, global_round, (batch_idx+1) * len(images), len(self.trainloader.dataset),
                     100. * batch_idx / len(self.trainloader), loss.item()))
 
@@ -112,6 +113,8 @@ class DataFreeDistillation(object):
 
 
     def distillation(self, student, generator, teacher, global_round, client):
+        path_project = '/home/aiia611/wqb/data'  #   /data_b/wqb/src/data
+        MODEL_NAMES = ["DNN", "CNN1", "CNN2", "CNN3", "LeNet", "AlexNet", "shufflenetv2", "mobilenetv2", "ResNet18", "ResNet34"]
         # transmit model to device
         student = student.to(self.device)
         teacher = teacher.to(self.device)
@@ -130,9 +133,12 @@ class DataFreeDistillation(object):
             scheduler_G = torch.optim.lr_scheduler.MultiStepLR(optimizer_G, [100, 200], 0.1)
         
         # 下面开始实现对抗蒸馏  
-        epoch_loss = []
+        training_loss = []
+        list_test_acc = []
+        list_test_loss = []
         for iter in range(self.args.local_ep):  # 局部对抗训练的轮数 100
             batch_loss = []
+            student.train()
             for k in range(self.args.iter_discrim):  # 每一轮更新学生模型的轮数 5
                 z = torch.randn((self.args.local_bs, self.args.nz, 1, 1) ).to(self.device)
                 optimizer_S.zero_grad()
@@ -145,7 +151,7 @@ class DataFreeDistillation(object):
                 optimizer_S.step()
                 batch_loss.append(loss_S.item())
 
-            epoch_loss.append(sum(batch_loss)/len(batch_loss))
+            training_loss.append(sum(batch_loss)/len(batch_loss))
             
             G_loss = 0.
             for k in range(self.args.iter_gen):  # 每一轮更新生成器的轮数
@@ -156,8 +162,8 @@ class DataFreeDistillation(object):
                 t_logit = teacher(fake) 
                 s_logit = student(fake)
 
-                loss_G = - torch.log( F.l1_loss( s_logit, t_logit)+1) 
-                # loss_G = - F.l1_loss( s_logit, t_logit ) 
+                # loss_G = - torch.log( F.l1_loss( s_logit, t_logit)+1) 
+                loss_G = - F.l1_loss( s_logit, t_logit ) 
                 G_loss = loss_G.item()
 
                 loss_G.backward()
@@ -167,7 +173,66 @@ class DataFreeDistillation(object):
                         global_round, client, iter+1, self.args.local_ep,
                         100. * iter / self.args.local_ep, sum(batch_loss)/len(batch_loss), G_loss))
 
-        return student.state_dict(), generator.state_dict(), sum(epoch_loss) / len(epoch_loss)
+            if((iter+1)%50 == 0):
+                test_acc, test_loss = self.inference(student)   
+                list_test_acc.append(test_acc)
+                list_test_loss.append(test_loss)
+                print('##############################################################################################')
+                print('| Client Idx : {} | Local Iter : {} | Student Model Test Acc : {}   Test Loss : {}'.format(
+                    client, iter+1, test_acc, test_loss))
+                print('##############################################################################################')
+                
+                checkpoint = {
+                    'iter': iter+1,
+                    'test_acc': test_acc,
+                    'test_loss': test_loss,
+                    'student_model': student.state_dict(),
+                    'generator': generator.state_dict()
+                }
+                result_path = os.path.join('{}/checkpoints'.format(path_project),'checkpoint_{}_iid[{}]_student[{}]_teacher[{}]_{}.pth.tar'.format(
+                    self.args.dataset, self.args.iid, self.args.model, MODEL_NAMES[client], iter+1))
+                torch.save(checkpoint, result_path)
+
+
+            # PLOTTING (optional)
+        import matplotlib
+        import matplotlib.pyplot as plt
+        matplotlib.use('Agg')
+        # Plot Training Loss curve
+        plt.figure()
+        plt.title('Training Loss vs Communication rounds')
+        plt.plot(range(len(training_loss)), training_loss, color='b')
+        plt.ylabel('Training loss')
+        plt.xlabel('Communication Rounds')
+        plt.savefig(os.path.join('{}/figure'.format(path_project),'TrainingLoss_{}_iid[{}]_student[{}]_teacher[{}]'.format(
+                                                            self.args.dataset, self.args.iid, self.args.model, MODEL_NAMES[client])))
+        
+        # Plot Test loss vs Communication rounds
+        plt.figure()
+        plt.title('Test loss  vs Communication rounds')
+        x_idx = range(len(list_test_loss))
+        for i in x_idx:
+            i = i*50
+        plt.plot(x_idx, list_test_loss, color='r')
+        plt.ylabel('Test loss')
+        plt.xlabel('Communication Rounds')
+        plt.savefig(os.path.join('{}/figure'.format(path_project),'TestLoss_{}_iid[{}]_student[{}]_teacher[{}]'.format(
+                                                    self.args.dataset, self.args.iid, self.args.model, MODEL_NAMES[client])))
+
+
+        # Plot Test Acc vs Communication rounds
+        plt.figure()
+        plt.title('Test acc  vs Communication rounds')
+        x2_idx = range(len(list_test_acc))
+        for i in x2_idx:
+            i = i*50
+        plt.plot(x2_idx, list_test_acc, color='r')
+        plt.ylabel('Test loss')
+        plt.xlabel('Communication Rounds')
+        plt.savefig(os.path.join('{}/figure'.format(path_project),'TestAcc_{}_iid[{}]_student[{}]_teacher[{}]'.format(
+                                                    self.args.dataset, self.args.iid, self.args.model, MODEL_NAMES[client])))
+        
+        return student.state_dict(), generator.state_dict(), sum(training_loss) / len(training_loss)
 
     def inference(self, model):
         """ Returns the inference accuracy and loss.
