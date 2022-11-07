@@ -12,7 +12,7 @@ def args_parser():
     parser.add_argument('--pretrained', type=int, default=1, help="whether pretrained or not")
     parser.add_argument('--hidden_channel', type=int, default=128,
                         help='hidden channel for DNN')
-    parser.add_argument('--pretrained_epochs', type=int, default=50,
+    parser.add_argument('--pretrained_epochs', type=int, default=100,
                         help="number of rounds of training")
     parser.add_argument('--pretrained_lr', type=float, default=0.01,
                         help='learning rate')
@@ -52,7 +52,7 @@ def args_parser():
     parser.add_argument('--gpu', default=None, help="To use cuda, set \
                         to a specific GPU ID. Default set to use CPU.")
 
-    parser.add_argument('--iid', type=int, default=0,  
+    parser.add_argument('--iid', type=int, default=1,  
                         help='Default set to IID. Set to 0 for non-IID.')
     parser.add_argument('--unequal', type=int, default=0,
                         help='whether to use unequal data splits for  \
@@ -71,7 +71,7 @@ def args_parser():
     parser.add_argument('--iter_gen', type=int, default=1, help='number of iteration for Generation  Stage')
     parser.add_argument('--comm_rounds', type=int, default=1,  #   200   50    1
                         help="number of rounds of training")
-    parser.add_argument('--local_ep', type=int, default=50,    # 100    200  50*60
+    parser.add_argument('--local_ep', type=int, default=3000,    # 100    200  50*60
                         help="the number of local epochs: E")
     parser.add_argument('--local_bs', type=int, default=256,
                         help="local batch size: B")

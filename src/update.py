@@ -175,8 +175,8 @@ class DataFreeDistillation(object):
 
             if((iter+1)%50 == 0):
                 test_acc, test_loss = self.inference(student)   
-                list_test_acc.append(test_acc)
-                list_test_loss.append(test_loss)
+                list_test_acc.append(round(test_acc, 2))
+                list_test_loss.append(round(test_loss, 2))
                 print('##############################################################################################')
                 print('| Client Idx : {} | Local Iter : {} | Student Model Test Acc : {}   Test Loss : {}'.format(
                     client, iter+1, test_acc, test_loss))
@@ -184,13 +184,13 @@ class DataFreeDistillation(object):
                 
                 checkpoint = {
                     'iter': iter+1,
-                    'test_acc': test_acc,
-                    'test_loss': test_loss,
+                    'test_acc': list_test_acc,
+                    'test_loss': list_test_loss,
                     'student_model': student.state_dict(),
                     'generator': generator.state_dict()
                 }
-                result_path = os.path.join('{}/checkpoints'.format(path_project),'checkpoint_{}_iid[{}]_student[{}]_teacher[{}]_{}.pth.tar'.format(
-                    self.args.dataset, self.args.iid, self.args.model, MODEL_NAMES[client], iter+1))
+                result_path = os.path.join('{}/checkpoints'.format(path_project),'checkpoint_{}_iid[{}]_student[{}]_teacher[{}].pth.tar'.format(
+                    self.args.dataset, self.args.iid, self.args.model, MODEL_NAMES[client]))
                 torch.save(checkpoint, result_path)
 
 
@@ -210,9 +210,9 @@ class DataFreeDistillation(object):
         # Plot Test loss vs Communication rounds
         plt.figure()
         plt.title('Test loss  vs Communication rounds')
-        x_idx = range(len(list_test_loss))
-        for i in x_idx:
-            i = i*50
+        x_idx = [i for i in range(len(list_test_loss))]
+        for i in range(len(x_idx)):
+            x_idx[i] = x_idx[i] * 50
         plt.plot(x_idx, list_test_loss, color='r')
         plt.ylabel('Test loss')
         plt.xlabel('Communication Rounds')
@@ -223,11 +223,11 @@ class DataFreeDistillation(object):
         # Plot Test Acc vs Communication rounds
         plt.figure()
         plt.title('Test acc  vs Communication rounds')
-        x2_idx = range(len(list_test_acc))
-        for i in x2_idx:
-            i = i*50
+        x2_idx = [i for i in range(len(list_test_acc))]
+        for i in range(len(x2_idx)):
+            x2_idx[i] = x2_idx[i] * 50
         plt.plot(x2_idx, list_test_acc, color='r')
-        plt.ylabel('Test loss')
+        plt.ylabel('Test acc')
         plt.xlabel('Communication Rounds')
         plt.savefig(os.path.join('{}/figure'.format(path_project),'TestAcc_{}_iid[{}]_student[{}]_teacher[{}]'.format(
                                                     self.args.dataset, self.args.iid, self.args.model, MODEL_NAMES[client])))
@@ -255,7 +255,7 @@ class DataFreeDistillation(object):
             correct += torch.sum(torch.eq(pred_labels, labels)).item()
             total += len(labels)
 
-        accuracy = format((correct/total) *100, '.2f')
+        accuracy = (correct/total) *100
         return accuracy, loss
         
 

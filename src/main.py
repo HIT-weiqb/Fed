@@ -177,7 +177,7 @@ if __name__ == '__main__':
 
         global_model.train()
 
-        for idx in range(args.num_users):  # 用deepcopy来实现，global model初始化local model
+        for idx in range(2,3):  # 用deepcopy来实现，global model初始化local model
             generator.load_state_dict(local_gen_user[idx])  # 加载local generator
             local_model = DataFreeDistillation(args=args, dataset=test_dataset,
                                       idxs=user_groups_test[idx])  # , logger=logger
