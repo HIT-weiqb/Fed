@@ -114,7 +114,7 @@ class DataFreeDistillation(object):
 
     def distillation(self, student, generator, teacher, global_round, client):
         path_project = '/home/aiia611/wqb/data'  #   /data_b/wqb/src/data
-        MODEL_NAMES = ["DNN", "CNN1", "CNN2", "CNN3", "LeNet", "AlexNet", "shufflenetv2", "mobilenetv2", "ResNet18", "ResNet34"]
+        MODEL_NAMES = ["VGG8", "VGG8", "VGG11", "VGG11", "VGG13", "VGG13", "VGG16", "VGG16", "VGG19", "VGG19"]
         # transmit model to device
         student = student.to(self.device)
         teacher = teacher.to(self.device)
@@ -189,7 +189,7 @@ class DataFreeDistillation(object):
                     'student_model': student.state_dict(),
                     'generator': generator.state_dict()
                 }
-                result_path = os.path.join('{}/checkpoints'.format(path_project),'checkpoint_{}_iid[{}]_student[{}]_teacher[{}].pth.tar'.format(
+                result_path = os.path.join('{}/checkpoints'.format(path_project),'VGGcheckpoint_{}_iid[{}]_student[{}]_teacher[{}].pth.tar'.format(
                     self.args.dataset, self.args.iid, self.args.model, MODEL_NAMES[client]))
                 torch.save(checkpoint, result_path)
 

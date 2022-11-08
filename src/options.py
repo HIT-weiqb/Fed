@@ -23,7 +23,7 @@ def args_parser():
                     of optimizer")
 
     # model arguments
-    parser.add_argument('--model', type=str, default='CNN2', help='model name')
+    parser.add_argument('--model', type=str, default='VGG16', help='model name')
     parser.add_argument('--kernel_num', type=int, default=9,
                         help='number of each kind of kernel')
     parser.add_argument('--kernel_sizes', type=str, default='3,4,5',

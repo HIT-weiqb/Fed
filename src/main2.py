@@ -17,23 +17,18 @@ from tensorboardX import SummaryWriter
 
 from options import args_parser
 from update import PreTrained, DataFreeDistillation, test_inference
-from models import DNN, CNN1, CNN2, CNN3, LeNet, AlexNet, ResNet18, ResNet34, mobilenetv2, shufflenetv2
+from models2 import vgg8, vgg11, vgg13, vgg16,vgg19
 # from resnet_8x import ResNet34_8x
 from utils import get_dataset, average_weights, exp_details
 
 
-CANDIDATE_MODELS = {"DNN": DNN,   ## 一共十个模型架构
-                    "CNN1": CNN1,
-                    "CNN2": CNN2,
-                    "CNN3": CNN3,
-                    "LeNet": LeNet,
-                    "AlexNet": AlexNet,
-                    "shufflenetv2": shufflenetv2,
-                    "mobilenetv2": mobilenetv2,
-                    "ResNet18": ResNet18,
-                    "ResNet34": ResNet34
+CANDIDATE_MODELS = {"VGG8": vgg8,   ## 一共十个模型架构
+                    "VGG11": vgg11,
+                    "VGG13": vgg13,
+                    "VGG16": vgg16,
+                    "VGG19": vgg19
                     } 
-MODEL_NAMES = ["DNN", "CNN1", "CNN2", "CNN3", "LeNet", "AlexNet", "shufflenetv2", "mobilenetv2", "ResNet18", "ResNet34"]
+MODEL_NAMES = ["VGG8", "VGG8", "VGG11", "VGG11", "VGG13", "VGG13", "VGG16", "VGG16", "VGG19", "VGG19"]
 if __name__ == '__main__':
     start_time = time.time()
     # define paths
@@ -74,7 +69,7 @@ if __name__ == '__main__':
     # print(global_model)
 
     if args.pretrained == 1:  # 预训练好了，加载数据集的划分、准确率、模型参数
-        model_path = os.path.join('{}/pretraineds'.format(path_project), 'checkpoint_{}_{}_iid[{}].pth.tar'.format(args.dataset, args.pretrained_epochs, args.iid))
+        model_path = os.path.join('{}/pretraineds'.format(path_project), 'VGGcheckpoint_{}_{}_iid[{}].pth.tar'.format(args.dataset, args.pretrained_epochs, args.iid))
         assert os.path.isfile(model_path)
         checkpoint = torch.load(model_path)
         print(checkpoint.keys())
@@ -147,7 +142,7 @@ if __name__ == '__main__':
         checkpoint['user_groups_test'] = user_groups_test
         for idx in range(args.num_users):
             checkpoint[MODEL_NAMES[idx]] = Pretrained_Models[idx].state_dict()
-        model_path = os.path.join('{}/pretraineds'.format(path_project),'checkpoint_{}_{}_iid[{}].pth.tar'.format(args.dataset, args.pretrained_epochs, args.iid))
+        model_path = os.path.join('{}/pretraineds'.format(path_project),'VGGcheckpoint_{}_{}_iid[{}].pth.tar'.format(args.dataset, args.pretrained_epochs, args.iid))
         torch.save(checkpoint, model_path)
 
 
@@ -176,7 +171,7 @@ if __name__ == '__main__':
 
         global_model.train()
 
-        for idx in range(2,3):  # 用deepcopy来实现，global model初始化local model
+        for idx in range(9, 10):  # 用deepcopy来实现，global model初始化local model
             generator.load_state_dict(local_gen_user[idx])  # 加载local generator
             local_model = DataFreeDistillation(args=args, dataset=test_dataset,
                                       idxs=user_groups_test[idx])  # , logger=logger
@@ -224,11 +219,11 @@ if __name__ == '__main__':
                     'local_val_loss':local_val_loss,
                     'global_model': global_model.state_dict()
                 }
-            result_path2 = os.path.join('{}/distillation_checkpoints'.format(path_project),'training_checkpoint_{}_{}_iid[{}]_{}.pth.tar'.format(args.dataset, args.comm_rounds, args.iid, epoch+1))
+            result_path2 = os.path.join('{}/distillation_checkpoints'.format(path_project),'VGGtraining_checkpoint_{}_{}_iid[{}]_{}.pth.tar'.format(args.dataset, args.comm_rounds, args.iid, epoch+1))
             torch.save(checkpoint, result_path2)
             if acc_global >= max_acc_global:
                 max_acc_global = copy.deepcopy(acc_global)
-                result_path3 = os.path.join('{}/best_results'.format(path_project),'best_results_checkpoint_{}_{}_iid[{}]_{}.pth.tar'.format(args.dataset, args.comm_rounds, args.iid, epoch+1))
+                result_path3 = os.path.join('{}/best_results'.format(path_project),'VGGbest_results_checkpoint_{}_{}_iid[{}]_{}.pth.tar'.format(args.dataset, args.comm_rounds, args.iid, epoch+1))
                 torch.save(checkpoint, result_path3)
                 
     print('\n Total Run Time: {0:0.4f}'.format(time.time()-start_time))
